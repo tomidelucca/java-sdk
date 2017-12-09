@@ -8,6 +8,7 @@ import org.asynchttpclient.*;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -95,14 +96,16 @@ public class MercadoLibre {
         return httpClient.preparePost(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params)
-                .setHeader("Content-Type", "application/json").setBody(body);
+                .setHeader("Content-Type", "application/json").setBody(body)
+                .setCharset(Charset.forName("UTF-8"));
     }
 
     private BoundRequestBuilder preparePut(String path, List<Param> params, String body) {
         return httpClient.preparePut(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params)
-                .setHeader("Content-Type", "application/json").setBody(body);
+                .setHeader("Content-Type", "application/json").setBody(body)
+                .setCharset(Charset.forName("UTF-8"));
     }
 
     private BoundRequestBuilder preparePost(String path, List<Param> params) {
