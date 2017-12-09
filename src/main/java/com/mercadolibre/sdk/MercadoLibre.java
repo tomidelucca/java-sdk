@@ -12,70 +12,38 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class Meli {
+public class MercadoLibre {
 
     public static String apiUrl = "https://api.mercadolibre.com";
-
-    /**
-     *	Availables auth sites. One user - application can only operate in one site
-     *
-     */
-
-    public static enum AuthUrls {
-        MLA("https://auth.mercadolibre.com.ar"), // Argentina
-        MLB("https://auth.mercadolivre.com.br"), // Brasil
-        MCO("https://auth.mercadolibre.com.co"), // Colombia
-        MCR("https://auth.mercadolibre.com.cr"), // Costa Rica
-        MEC("https://auth.mercadolibre.com.ec"), // Ecuador
-        MLC("https://auth.mercadolibre.cl"), // Chile
-        MLM("https://auth.mercadolibre.com.mx"), // Mexico
-        MLU("https://auth.mercadolibre.com.uy"), // Uruguay
-        MLV("https://auth.mercadolibre.com.ve"), // Venezuela
-        MPA("https://auth.mercadolibre.com.pa"), // Panama
-        MPE("https://auth.mercadolibre.com.pe"), // Peru
-        MPT("https://auth.mercadolibre.com.pt"), // Portugal
-        MRD("https://auth.mercadolibre.com.do"); // Dominicana
-
-        private String value;
-
-
-        private AuthUrls(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    };
-
+    private static AsyncHttpClient httpClient = null;
     private String accessToken;
     private String refreshToken;
     private Long clientId;
     private String clientSecret;
-    private AsyncHttpClient http;
-    /** news **/
-    private Long   expiresIn;
+    private Long expiresIn;
     private String scope;
     private String userId;
     private String tokenType;
 
     {
-        AsyncHttpClientConfig cf = new DefaultAsyncHttpClientConfig.Builder().setUserAgent("MELI-JAVA-SDK-0.0.4").build();
-        http = new DefaultAsyncHttpClient(cf);
+        if (httpClient == null) {
+            AsyncHttpClientConfig cf = new DefaultAsyncHttpClientConfig.Builder().setUserAgent("MELI-JAVA-SDK-0.0.4").setMaxConnections(10).build();
+            httpClient = new DefaultAsyncHttpClient(cf);
+        }
     }
 
-    public Meli(Long clientId, String clientSecret) {
+    public MercadoLibre(Long clientId, String clientSecret) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
     }
 
-    public Meli(Long clientId, String clientSecret, String accessToken) {
+    public MercadoLibre(Long clientId, String clientSecret, String accessToken) {
         this.accessToken = accessToken;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
     }
 
-    public Meli(Long clientId, String clientSecret, String accessToken, String refreshToken) {
+    public MercadoLibre(Long clientId, String clientSecret, String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -89,7 +57,7 @@ public class Meli {
     public String getRefreshToken() {
         return this.refreshToken;
     }
-    /** news **/
+
     public Long getExpiresIn() {
         return this.expiresIn;
     }
@@ -111,35 +79,34 @@ public class Meli {
     }
 
     private BoundRequestBuilder prepareGet(String path, List<Param> params) {
-        return http.prepareGet(apiUrl + path)
+        return httpClient.prepareGet(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params);
     }
 
-
     private BoundRequestBuilder prepareDelete(String path,
                                               List<Param> params) {
-        return http.prepareDelete(apiUrl + path)
+        return httpClient.prepareDelete(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params);
     }
 
     private BoundRequestBuilder preparePost(String path, List<Param> params, String body) {
-        return http.preparePost(apiUrl + path)
+        return httpClient.preparePost(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params)
                 .setHeader("Content-Type", "application/json").setBody(body);
     }
 
     private BoundRequestBuilder preparePut(String path, List<Param> params, String body) {
-        return http.preparePut(apiUrl + path)
+        return httpClient.preparePut(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params)
                 .setHeader("Content-Type", "application/json").setBody(body);
     }
 
     private BoundRequestBuilder preparePost(String path, List<Param> params) {
-        return http.preparePost(apiUrl + path)
+        return httpClient.preparePost(apiUrl + path)
                 .addHeader("Accept", "application/json")
                 .setQueryParams(params);
     }
@@ -169,15 +136,14 @@ public class Meli {
             parseToken(req);
         } catch (AuthorizationFailure e1) {
             System.out.println(e1.getMessage());
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
     }
 
     /**
-     *
      * @param callback: The callback URL. Must be the applications redirect URI
-     * @param authUrl: The authorization URL. Get from Meli.AuthUrls
+     * @param authUrl:  The authorization URL. Get from MercadoLibre.AuthUrls
      * @return the authorization URL
      */
     public String getAuthUrl(String callback, AuthUrls authUrl) {
@@ -187,7 +153,7 @@ public class Meli {
                     + "&redirect_uri="
                     + URLEncoder.encode(callback, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            return authUrl+"/authorization?response_type=code&client_id="
+            return authUrl + "/authorization?response_type=code&client_id="
                     + clientId + "&redirect_uri=" + callback;
         }
     }
@@ -237,7 +203,7 @@ public class Meli {
             /** News **/
             JsonElement jsonElementExpires = object.get("expires_in");
             this.expiresIn = jsonElementExpires != null ? Long.parseLong(object.get(
-                    "expires_in").getAsString()): null;
+                    "expires_in").getAsString()) : null;
 
             JsonElement jsonElementScope = object.get("scope");
             this.scope = jsonElementScope != null ? object.get(
@@ -309,5 +275,34 @@ public class Meli {
 
     public BoundRequestBuilder options(String path) {
         return null;
+    }
+
+    /**
+     * Available auth endpoints
+     */
+    public static enum AuthUrls {
+        MLA("https://auth.mercadolibre.com.ar"), // Argentina
+        MLB("https://auth.mercadolivre.com.br"), // Brasil
+        MCO("https://auth.mercadolibre.com.co"), // Colombia
+        MCR("https://auth.mercadolibre.com.cr"), // Costa Rica
+        MEC("https://auth.mercadolibre.com.ec"), // Ecuador
+        MLC("https://auth.mercadolibre.cl"), // Chile
+        MLM("https://auth.mercadolibre.com.mx"), // Mexico
+        MLU("https://auth.mercadolibre.com.uy"), // Uruguay
+        MLV("https://auth.mercadolibre.com.ve"), // Venezuela
+        MPA("https://auth.mercadolibre.com.pa"), // Panama
+        MPE("https://auth.mercadolibre.com.pe"), // Peru
+        MPT("https://auth.mercadolibre.com.pt"), // Portugal
+        MRD("https://auth.mercadolibre.com.do"); // Dominicana
+
+        private String value;
+
+        private AuthUrls(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 }
